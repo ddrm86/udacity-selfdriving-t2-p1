@@ -34,6 +34,8 @@ FusionEKF::FusionEKF() {
   H_laser_ << 1, 0, 0, 0,
               0, 1, 0, 0;
   
+  noise_ax = 9;
+  noise_ay = 9;
   /**
   TODO:
     * Finish initializing the FusionEKF.
@@ -99,7 +101,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Update the process noise covariance matrix.
      * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
-
+  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
+	previous_timestamp_ = measurement_pack.timestamp_;
+  
+  ekf_.F_(0, 2) = dt;
+  ekf_.F_(1, 3) = dt;
+  
+  float dt2 = pow(dt, 2);
+  float dt3 = pow(dt, 3);
+  float dt4 = pow(dt, 4);
+  
+  ekf_.Q_ << dt4/4*noise_ax, 0, dt3/2*noise_ax, 0,
+            0, dt4/4*noise_ay, 0, dt3/2*noise_ay,
+            dt3/2*noise_ax, 0, dt2*noise_ax, 0,
+            0, dt3/2*noise_ay, 0, dt2*noise_ay;  
+  
   ekf_.Predict();
 
   /*****************************************************************************
