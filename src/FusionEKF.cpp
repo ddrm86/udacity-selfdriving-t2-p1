@@ -138,18 +138,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   VectorXd x_new = measurement_pack.raw_measurements_;
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     if ((x_new(0) != 0) || (x_new(1) != 0)) {
-      cout << "LALALA" << endl;
       ekf_.R_ = R_radar_;
-      cout << ekf_.H_ << endl;
       ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
-      cout << ekf_.H_ << endl;
-      cout << "LELELE" << endl;
       ekf_.UpdateEKF(x_new);
     }
   } else {
     ekf_.R_ = R_laser_;
     ekf_.H_ = H_laser_;
-    ekf_.Update(x_new);
+    ekf_.UpdateEKF(x_new);
   }
 
   // print the output
