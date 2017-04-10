@@ -43,10 +43,6 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   float rss = sqrt(ss);
   float rssp3 = ss * rss;
 
-  if (ss == 0.0) {
-    ss = 0.00001;
-  }
-  
   J << px/rss, py/rss, 0, 0,
        -(py/ss), px/ss, 0, 0,
        py*(vx*py-vy*px)/rssp3, px*(vy*px-vx*py)/rssp3, px/rss, py/rss;

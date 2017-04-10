@@ -42,8 +42,8 @@ FusionEKF::FusionEKF() {
   ekf_.P_ = MatrixXd(4, 4);
   ekf_.P_ << 1, 0, 0, 0,
              0, 1, 0, 0,
-             0, 0, 1000, 0,
-             0, 0, 0, 1000;
+             0, 0, 1, 0,
+             0, 0, 0, 1;
   
   ekf_.F_ = MatrixXd(4, 4);
   ekf_.F_ << 1, 0, 1, 0,
@@ -61,8 +61,6 @@ FusionEKF::FusionEKF() {
 FusionEKF::~FusionEKF() {}
 
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
-
-
   /*****************************************************************************
    *  Initialization
    ****************************************************************************/
@@ -85,8 +83,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       
       double px = rho * cos(phi);
       double py = rho * sin(phi);
-      double vx = rho_dot * cos(phi);
-      double vy = rho_dot * sin(phi);
+      double vx = 0;
+      double vy = 0;
       
       ekf_.x_ << px, py, vx, vy;
     }
@@ -113,7 +111,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
   float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
 	previous_timestamp_ = measurement_pack.timestamp_;
-  
+
   ekf_.F_(0, 2) = dt;
   ekf_.F_(1, 3) = dt;
   
@@ -121,13 +119,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float dt3 = pow(dt, 3);
   float dt4 = pow(dt, 4);
   
+  ekf_.Q_ = MatrixXd(4, 4);
   ekf_.Q_ << dt4/4*noise_ax, 0, dt3/2*noise_ax, 0,
             0, dt4/4*noise_ay, 0, dt3/2*noise_ay,
             dt3/2*noise_ax, 0, dt2*noise_ax, 0,
-            0, dt3/2*noise_ay, 0, dt2*noise_ay;  
-  
+            0, dt3/2*noise_ay, 0, dt2*noise_ay;
+            
   ekf_.Predict();
-
   /*****************************************************************************
    *  Update
    ****************************************************************************/
@@ -137,15 +135,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Use the sensor type to perform the update step.
      * Update the state and covariance matrices.
    */
-
+  VectorXd x_new = measurement_pack.raw_measurements_;
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    ekf_.R_ = R_radar;
-    ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
-    ekf_.Update(measurement_pack.raw_measurements_);
+    if ((x_new(0) != 0) || (x_new(1) != 0)) {
+      cout << "LALALA" << endl;
+      ekf_.R_ = R_radar_;
+      cout << ekf_.H_ << endl;
+      ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
+      cout << ekf_.H_ << endl;
+      cout << "LELELE" << endl;
+      ekf_.UpdateEKF(x_new);
+    }
   } else {
     ekf_.R_ = R_laser_;
-    ekf_.H_ = H_laser_
-    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
+    ekf_.H_ = H_laser_;
+    ekf_.Update(x_new);
   }
 
   // print the output
